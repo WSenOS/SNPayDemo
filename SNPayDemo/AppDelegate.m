@@ -7,6 +7,19 @@
 //
 
 #import "AppDelegate.h"
+#import "SNPayManager.h"
+
+//微信
+#define WeChatAppID @""
+#define WeChatAppSecret @""
+#define WeChatPrivateKey @""
+#define WeChatShopID @""
+
+//支付宝
+#define Alipay_PID @""
+#define Alipay_seller @""
+#define Alipay_appScheme @""
+#define Alipay_privateKey @""
 
 @interface AppDelegate ()
 
@@ -16,9 +29,29 @@
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Override point for customization after application launch.
+    //注册微信 支付宝
+    [self registerPay];
     return YES;
 }
+
+- (void)registerPay {
+    [[SNPayManager sharePayManager] registerAlipayPatenerID:Alipay_PID seller:Alipay_seller appScheme:Alipay_appScheme privateKey:Alipay_privateKey];
+    [[SNPayManager sharePayManager]registerWechatAppID:WeChatAppID partnerID:WeChatPrivateKey shopID:WeChatShopID];
+}
+
+#pragma 设置回调
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
+    [[SNPayManager sharePayManager]sn_alipayHandleOpenURL:url];
+    [[SNPayManager sharePayManager] sn_wechatHandleOpenURL:url];
+    return YES;
+}
+
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<NSString*, id> *)options {
+    [[SNPayManager sharePayManager]sn_alipayHandleOpenURL:url];
+    [[SNPayManager sharePayManager] sn_wechatHandleOpenURL:url];
+    return YES;
+}
+
 
 - (void)applicationWillResignActive:(UIApplication *)application {
     // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.

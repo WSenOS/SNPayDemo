@@ -14,9 +14,11 @@
 #import "DataSigner.h"
 #import "Order.h"
 
+//使用通知回调
 extern NSString * const SNPaySuccess;
 extern NSString * const SNPayFailure;
 
+//block回调
 typedef void(^SNAlipayResultsBlock) (NSError * error);
 typedef void(^SNWechatResultsBlock) (NSError * error);
 

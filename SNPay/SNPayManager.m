@@ -198,6 +198,8 @@ static SNPayManager * _manager = nil;
             _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
         }];
         
+    } else {
+        _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:@"调起支付宝失败，请重试"}]);
     }
 }
 
@@ -281,8 +283,8 @@ static SNPayManager * _manager = nil;
     if(dict == nil){
         //错误提示
         NSString *error = [req error];
-        
-        [self alert:@"错误信息" msg:error];
+        _wechatResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:error}]);
+//        [self alert:@"错误信息" msg:error];
         
     }else{
         NSMutableString *stamp  = [dict objectForKey:@"timestamp"];

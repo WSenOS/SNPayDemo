@@ -7,7 +7,7 @@
 //
 
 #import "ViewController.h"
-
+#import "SNPayManager.h"
 @interface ViewController ()
 
 @end
@@ -16,7 +16,22 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
+
+    //调起支付
+    [[SNPayManager sharePayManager] sn_openTheAlipayPay:^(NSError *error) {
+        if (!error) {
+            //成功
+        } else {
+            NSLog(@"%@",[error localizedDescription]);
+        }
+    }];
+    [[SNPayManager sharePayManager] sn_openTheWechatPay:^(NSError *error) {
+        if (!error) {
+            //成功
+        } else {
+            NSLog(@"%@",[error localizedDescription]);
+        }
+    }];
 }
 
 - (void)didReceiveMemoryWarning {

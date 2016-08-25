@@ -214,7 +214,7 @@
     }else{
         [debugInfo appendFormat:@"获取prepayid失败！\n"];
         NSLog(@"%@",debugInfo);
-        error = @"调起支付失败，请重试";
+        error = @"调起微信支付失败，请重试";
     }
     return nil;
 }
