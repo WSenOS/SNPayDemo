@@ -58,4 +58,4 @@
 ## 欢迎访问Blog
 Blog: https://wsenos.github.io/
 ## License
-MIT License
+[MIT License](https://opensource.org/licenses/MIT)
