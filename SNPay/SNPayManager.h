@@ -34,6 +34,12 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
 //商品描述 支付宝
 @property (nonatomic, copy) NSString * order_description;
 
+
+/*
+ * 是否使用通知回调提示支付结果  默认不适用 NO
+ */
+@property (nonatomic, assign) BOOL useNotication;
+
 + (instancetype)sharePayManager;
 
 /** 注册支付宝

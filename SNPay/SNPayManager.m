@@ -147,8 +147,9 @@ static SNPayManager * _manager = nil;
 @implementation SNPayManager(sn_alipayPay)
 
 - (void)sn_openTheAlipayPay:(SNAlipayResultsBlock)alipayResultsBlock {
-    _alipayResultsBlock = [alipayResultsBlock copy];
-    
+    if (!_useNotication) {
+        _alipayResultsBlock = [alipayResultsBlock copy];
+    }
     /*
      *生成订单信息及签名
      */
@@ -190,16 +191,33 @@ static SNPayManager * _manager = nil;
             
             NSLog(@"callback ===>> %@",resultDic);
             if ([resultDic[@"resultStatus"] integerValue] == 9000) {
-                _alipayResultsBlock(nil);
-                return ;
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock(nil);
+                    }
+                }
+            } else {
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
+                        
+                    }
+                }
             }
-            
-            NSLog(@"reslut = %@",resultDic);
-            _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
         }];
         
     } else {
-        _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:@"调起支付宝失败，请重试"}]);
+        if (_useNotication) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+        } else {
+            if (_alipayResultsBlock) {
+                _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:@"调起支付宝失败，请重试"}]);
+            }
+        }
     }
 }
 
@@ -211,14 +229,20 @@ static SNPayManager * _manager = nil;
             NSLog(@"openURL ===>> %@",resultDic);
             //【由于在跳转支付宝客户端支付的过程中，商户app在后台很可能被系统kill了，所以pay接口的callback就会失效，请商户对standbyCallback返回的回调结果进行处理,就是在这个方法里面处理跟callback一样的逻辑】
             if ([resultDic[@"resultStatus"] integerValue] == 9000) {
-                [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
-                if (_alipayResultsBlock) {
-                    _alipayResultsBlock(nil);
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock(nil);
+                    }
                 }
             } else {
-                [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
-                if (_alipayResultsBlock) {
-                    _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
+                    }
                 }
             }
         }];
@@ -229,16 +253,21 @@ static SNPayManager * _manager = nil;
             NSLog(@"openURL ===>> %@",resultDic);
             //【由于在跳转支付宝客户端支付的过程中，商户app在后台很可能被系统kill了，所以pay接口的callback就会失效，请商户对standbyCallback返回的回调结果进行处理,就是在这个方法里面处理跟callback一样的逻辑】
             if ([resultDic[@"resultStatus"] integerValue] == 9000) {
-                [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
-                if (_alipayResultsBlock) {
-                    _alipayResultsBlock(nil);
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock(nil);
+                    }
                 }
             } else {
-                [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
-                if (_alipayResultsBlock) {
-                    _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
+                    }
                 }
-                
             }
         }];
     }
@@ -260,8 +289,9 @@ static SNPayManager * _manager = nil;
 //}
 
 - (void)sn_openTheWechatPay:(SNWechatResultsBlock)wechatResultsBlock {
-    
-    _wechatResultsBlock = [wechatResultsBlock copy];
+    if (!_useNotication) {
+        _wechatResultsBlock = [wechatResultsBlock copy];
+    }
     //创建支付签名对象
     payRequsestHandler *req = [[payRequsestHandler alloc] init];
     //初始化支付签名对象
@@ -283,7 +313,13 @@ static SNPayManager * _manager = nil;
     if(dict == nil){
         //错误提示
         NSString *error = [req error];
-        _wechatResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:error}]);
+        if (_useNotication) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+        } else {
+            if (_wechatResultsBlock) {
+                _wechatResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:error}]);
+            }
+        }
 //        [self alert:@"错误信息" msg:error];
         
     }else{
@@ -328,10 +364,13 @@ static SNPayManager * _manager = nil;
             case WXSuccess:{
                 strMsg = @"支付结果：成功！";
                 NSLog(@"支付成功－PaySuccess，retcode = %d", resp.errCode);
-                //通过通知中心发送通知
-                [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
-                if (_wechatResultsBlock) {
-                    _wechatResultsBlock(nil);
+                if (_useNotication) {
+                    //通过通知中心发送通知
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
+                } else {
+                    if (_wechatResultsBlock) {
+                        _wechatResultsBlock(nil);
+                    }
                 }
             }
                 break;
@@ -339,10 +378,13 @@ static SNPayManager * _manager = nil;
             default:
                 strMsg = [NSString stringWithFormat:@"%@", @"支付不成功哦！"];
                 NSLog(@"错误，retcode = %d, retstr = %@", resp.errCode,resp.errStr);
-                //通过通知中心发送通知
-                [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
-                if (_wechatResultsBlock) {
-                    _wechatResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:@"支付失败"}]);
+                if (_useNotication) {
+                    //通过通知中心发送通知
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+                } else {
+                    if (_wechatResultsBlock) {
+                        _wechatResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:@"支付失败"}]);
+                    }
                 }
                 break;
         }
