@@ -50,10 +50,18 @@
     //如果是POST
     [request setHTTPBody:[data dataUsingEncoding:NSUTF8StringEncoding]];
     
-    NSError *error;
     //将请求的url数据放到NSData对象中
-    NSData *response = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
-    return response;
+    __block NSData *responseData = nil;
+    //使用信号量 实现同步请求
+    dispatch_semaphore_t disp = dispatch_semaphore_create(0);
+    NSURLSession * session = [NSURLSession sharedSession];
+    NSURLSessionDataTask * dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        responseData = data;
+        dispatch_semaphore_signal(disp);
+    }];
+    [dataTask resume];
+    dispatch_semaphore_wait(disp, DISPATCH_TIME_FOREVER);
+    return responseData;
 }
 
 @end

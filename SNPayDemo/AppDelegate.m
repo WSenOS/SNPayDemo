@@ -36,7 +36,12 @@
 
 - (void)registerPay {
     [[SNPayManager sharePayManager] registerAlipayPatenerID:Alipay_PID seller:Alipay_seller appScheme:Alipay_appScheme privateKey:Alipay_privateKey];
-    [[SNPayManager sharePayManager]registerWechatAppID:WeChatAppID partnerID:WeChatPrivateKey shopID:WeChatShopID];
+    /*
+     本地签名
+     [[SNPayManager sharePayManager]registerWechatAppID:WeChatAppID secretKey:WeChatPrivateKey shopID:WeChatShopID];
+     */
+    //服务器签名
+    [[SNPayManager sharePayManager] registerWechatAppID:WeChatAppID];
 }
 
 #pragma 设置回调

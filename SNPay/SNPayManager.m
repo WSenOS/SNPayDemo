@@ -10,17 +10,9 @@
 
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-
-
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <net/if.h>
-
-#define IOS_CELLULAR    @"pdp_ip0"
-#define IOS_WIFI        @"en0"
-#define IOS_VPN         @"utun0"
-#define IP_ADDR_IPv4    @"ipv4"
-#define IP_ADDR_IPv6    @"ipv6"
 
 #define Domain @"com.sn.payResults"
 
@@ -38,7 +30,7 @@ static SNPayManager * _manager = nil;
     NSString * _alipay_privateKey;
     //微信
     NSString * _wechat_appID;
-    NSString * _wechat_partnerID;
+    NSString * _wechat_secretKey;
     NSString * _wechat_shopID;
 }
 @property (nonatomic, copy) SNAlipayResultsBlock alipayResultsBlock;
@@ -54,6 +46,7 @@ static SNPayManager * _manager = nil;
     return _manager;
 }
 
+#pragma mark - 注册支付宝 微信
 - (void)registerAlipayPatenerID:(NSString *)partner
                          seller:(NSString *)seller
                       appScheme:(NSString *)appScheme
@@ -65,82 +58,21 @@ static SNPayManager * _manager = nil;
 
 }
 
-- (void)registerWechatAppID:(NSString *)AppID
-                  partnerID:(NSString *)partnerID
+- (void)registerWechatAppID:(NSString *)appID
+                  secretKey:(NSString *)secretKey
                      shopID:(NSString *)shopID {
-    [WXApi registerApp:AppID];
-    _wechat_appID    = AppID;
-    _wechat_partnerID= partnerID;
+    [WXApi registerApp:appID];
+    _wechat_appID    = appID;
+    _wechat_secretKey= secretKey;
     _wechat_shopID   = shopID;
 }
 
+- (void)registerWechatAppID:(NSString *)appID {
+    [WXApi registerApp:appID];
+    _wechat_appID    = appID;
+}
 
-#pragma mark - ip
-////获取ip地址
-//- (NSString *)getIPAddress:(BOOL)preferIPv4 {
-//    
-//    NSArray *searchArray = preferIPv4 ?
-//    @[ IOS_VPN @"/" IP_ADDR_IPv4, IOS_VPN @"/" IP_ADDR_IPv6, IOS_WIFI @"/" IP_ADDR_IPv4, IOS_WIFI @"/" IP_ADDR_IPv6, IOS_CELLULAR @"/" IP_ADDR_IPv4, IOS_CELLULAR @"/" IP_ADDR_IPv6 ] :
-//    @[ IOS_VPN @"/" IP_ADDR_IPv6, IOS_VPN @"/" IP_ADDR_IPv4, IOS_WIFI @"/" IP_ADDR_IPv6, IOS_WIFI @"/" IP_ADDR_IPv4, IOS_CELLULAR @"/" IP_ADDR_IPv6, IOS_CELLULAR @"/" IP_ADDR_IPv4 ] ;
-//    
-//    NSDictionary *addresses = [self getIPAddresses];
-//    NSLog(@"addresses: %@", addresses);
-//    
-//    __block NSString *address;
-//    [searchArray enumerateObjectsUsingBlock:^(NSString *key, NSUInteger idx, BOOL *stop)
-//     {
-//         address = addresses[key];
-//         if(address) *stop = YES;
-//     } ];
-//    return address ? address : @"0.0.0.0";
-//}
-//
-//- (NSDictionary *)getIPAddresses {
-//    
-//    NSMutableDictionary *addresses = [NSMutableDictionary dictionaryWithCapacity:8];
-//    
-//    // retrieve the current interfaces - returns 0 on success
-//    struct ifaddrs *interfaces;
-//    if(!getifaddrs(&interfaces)) {
-//        // Loop through linked list of interfaces
-//        struct ifaddrs *interface;
-//        for(interface=interfaces; interface; interface=interface->ifa_next) {
-//            if(!(interface->ifa_flags & IFF_UP) /* || (interface->ifa_flags & IFF_LOOPBACK) */ ) {
-//                continue; // deeply nested code harder to read
-//            }
-//            const struct sockaddr_in *addr = (const struct sockaddr_in*)interface->ifa_addr;
-//            char addrBuf[ MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN) ];
-//            if(addr && (addr->sin_family==AF_INET || addr->sin_family==AF_INET6)) {
-//                NSString *name = [NSString stringWithUTF8String:interface->ifa_name];
-//                NSString *type;
-//                if(addr->sin_family == AF_INET) {
-//                    if(inet_ntop(AF_INET, &addr->sin_addr, addrBuf, INET_ADDRSTRLEN)) {
-//                        type = IP_ADDR_IPv4;
-//                    }
-//                } else {
-//                    const struct sockaddr_in6 *addr6 = (const struct sockaddr_in6*)interface->ifa_addr;
-//                    if(inet_ntop(AF_INET6, &addr6->sin6_addr, addrBuf, INET6_ADDRSTRLEN)) {
-//                        type = IP_ADDR_IPv6;
-//                    }
-//                }
-//                if(type) {
-//                    NSString *key = [NSString stringWithFormat:@"%@/%@", name, type];
-//                    addresses[key] = [NSString stringWithUTF8String:addrBuf];
-//                }
-//            }
-//        }
-//        // Free memory
-//        freeifaddrs(interfaces);
-//    }
-//    return [addresses count] ? addresses : nil;
-//}
-//
-//- (NSString *)spbill_create_ip {
-//    NSString * string;
-//    string =  [self getIPAddress:YES];
-//    return string;
-//}
-
+#pragma mark - IP地址获取
 - (NSString *)fetchIPAddress {
     NSString *address = @"0.0.0.0";
     struct ifaddrs *interfaces = NULL;
@@ -167,17 +99,14 @@ static SNPayManager * _manager = nil;
     return address;
 }
 
-- (NSString *)spbill_create_ip {
-    NSString * string;
-    string =  [self fetchIPAddress];
-    return string;
+- (NSString *)deviceIp {
+    return [self fetchIPAddress];
 }
 
 @end
 
 #pragma mark - 支付宝
 @implementation SNPayManager(sn_alipayPay)
-
 - (void)sn_openTheAlipayPay:(SNAlipayResultsBlock)alipayResultsBlock {
     if (!_useNotication) {
         _alipayResultsBlock = [alipayResultsBlock copy];
@@ -201,7 +130,7 @@ static SNPayManager * _manager = nil;
     order.inputCharset = @"utf-8";
     order.itBPay = @"30m";
     order.showURL = @"m.alipay.com";
-    
+
     //应用注册scheme,在AlixPayDemo-Info.plist定义URL types
     NSString *appScheme = _alipay_appScheme;
     
@@ -220,7 +149,6 @@ static SNPayManager * _manager = nil;
                        orderSpec, signedString, @"RSA"];
         
         [[AlipaySDK defaultService] payOrder:orderString fromScheme:appScheme callback:^(NSDictionary *resultDic) {
-            
             NSLog(@"callback ===>> %@",resultDic);
             if ([resultDic[@"resultStatus"] integerValue] == 9000) {
                 if (_useNotication) {
@@ -241,7 +169,6 @@ static SNPayManager * _manager = nil;
                 }
             }
         }];
-        
     } else {
         if (_useNotication) {
             [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
@@ -280,7 +207,6 @@ static SNPayManager * _manager = nil;
         }];
     }
     if ([url.host isEqualToString:@"platformapi"]){//支付宝钱包快登授权返回authCode
-        
         [[AlipaySDK defaultService] processAuthResult:url standbyCallback:^(NSDictionary *resultDic) {
             NSLog(@"openURL ===>> %@",resultDic);
             //【由于在跳转支付宝客户端支付的过程中，商户app在后台很可能被系统kill了，所以pay接口的callback就会失效，请商户对standbyCallback返回的回调结果进行处理,就是在这个方法里面处理跟callback一样的逻辑】
@@ -316,7 +242,7 @@ static SNPayManager * _manager = nil;
 //    //初始化支付签名对象
 //    [req init:_wechat_appID mch_id:_wechat_shopID];
 //    //设置密钥
-//    [req setKey:_wechat_partnerID];
+//    [req setKey:_wechat_secretKey];
 //    [req loadSin];
 //}
 
@@ -329,14 +255,14 @@ static SNPayManager * _manager = nil;
     //初始化支付签名对象
     [req init:_wechat_appID mch_id:_wechat_shopID];
     //设置密钥
-    [req setKey:_wechat_partnerID];
+    [req setKey:_wechat_secretKey];
     
-    req.notify_url = _notify_url;
-    req.order_name = _order_name;
-    req.order_no = _order_no;
+    req.notify_url  = _notify_url;
+    req.order_name  = _order_name;
+    req.order_no    = _order_no;
     req.order_price = [NSString stringWithFormat:@"%.f",[_order_price floatValue] * 100];
     
-    req.spbill_create_ip = [self spbill_create_ip];
+    req.spbill_create_ip = self.deviceIp;
     
     //获取到实际调起微信支付的参数后，在app端调起支付
     
@@ -352,8 +278,6 @@ static SNPayManager * _manager = nil;
                 _wechatResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:error}]);
             }
         }
-//        [self alert:@"错误信息" msg:error];
-        
     }else{
         NSMutableString *stamp  = [dict objectForKey:@"timestamp"];
         //调起微信支付
@@ -370,17 +294,26 @@ static SNPayManager * _manager = nil;
     }
 }
 
+- (void)sn_openTheWechatWithServicePay:(SNWechatResultsBlock)wechatResultsBlock {
+    if (!_useNotication) {
+        _wechatResultsBlock = [wechatResultsBlock copy];
+    }
+    //调起微信支付
+    PayReq* req             = [[PayReq alloc] init];
+    req.openID              = _wechat_appID;
+    req.partnerId           = _wxPartnerId;
+    req.prepayId            = _wxPrepayId;
+    req.nonceStr            = _wxNonceStr;
+    req.timeStamp           = _wxTimeStamp.intValue;
+    req.package             = @"Sign=WXPay";
+    req.sign                = _wxSign;
+    
+    [WXApi sendReq:req];
+}
+
 
 - (void)sn_wechatHandleOpenURL:(NSURL *)url {
     [WXApi handleOpenURL:url delegate:self];
-}
-
-//客户端提示信息
-- (void)alert:(NSString *)title msg:(NSString *)msg
-{
-    UIAlertView *alter = [[UIAlertView alloc] initWithTitle:title message:msg delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil];
-    
-    [alter show];
 }
 
 - (void)onResp:(BaseResp*)resp {
@@ -406,7 +339,6 @@ static SNPayManager * _manager = nil;
                 }
             }
                 break;
-                
             default:
                 strMsg = [NSString stringWithFormat:@"%@", @"支付不成功哦！"];
                 NSLog(@"错误，retcode = %d, retstr = %@", resp.errCode,resp.errStr);

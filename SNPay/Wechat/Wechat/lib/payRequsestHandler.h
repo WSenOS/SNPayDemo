@@ -4,10 +4,6 @@
 #import "WXUtil.h"
 #import "ApiXml.h"
 
-//回调网址
-#define NOTIFY_URL      @""
-
-
 @interface payRequsestHandler : NSObject{
 	//预支付网关url地址
     NSString *payUrl;

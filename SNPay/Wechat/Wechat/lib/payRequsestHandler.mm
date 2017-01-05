@@ -5,9 +5,8 @@
  服务器请求操作处理
  */
 @implementation payRequsestHandler
-
 //初始化函数
--(BOOL) init:(NSString *)app_id mch_id:(NSString *)mch_id;
+-(BOOL)init:(NSString *)app_id mch_id:(NSString *)mch_id;
 {
     //初始构造函数
     payUrl     = @"https://api.mch.weixin.qq.com/pay/unifiedorder";
@@ -58,16 +57,12 @@
     }
     //添加key字段
     [contentString appendFormat:@"key=%@", spkey];
-    
     //得到MD5 sign签名
     NSString *md5Sign =[WXUtil md5:contentString];
-    
     //输出Debug Info
     [debugInfo appendFormat:@"MD5签名字符串：\n%@\n\n",contentString];
-
     return md5Sign;
 }
-
 //获取package带参数的签名包
 -(NSString *)genPackage:(NSMutableDictionary*)packageParams
 {
@@ -82,14 +77,12 @@
         [reqPars appendFormat:@"<%@>%@</%@>\n", categoryId, [packageParams objectForKey:categoryId],categoryId];
     }
     [reqPars appendFormat:@"<sign>%@</sign>\n</xml>", sign];
-    
     return [NSString stringWithString:reqPars];
 }
 //提交预支付
 - (NSString *)sendPrepay:(NSMutableDictionary *)prePayParams
 {
     NSString *prepayid = nil;
-    
     //获取提交支付
     NSString *send      = [self genPackage:prePayParams];
     
@@ -104,7 +97,6 @@
     [debugInfo appendFormat:@"服务器返回：\n%@\n\n",[[NSString alloc] initWithData:res encoding:NSUTF8StringEncoding]];
     
     XMLHelper *xml  = [[XMLHelper alloc] init];
-    
     //开始解析
     [xml startParse:res];
     
@@ -137,7 +129,6 @@
         last_errcode = 2;
         [debugInfo appendFormat:@"接口返回错误！！！\n"];
     }
-
     return prepayid;
 }
 
@@ -152,7 +143,6 @@
     //订单金额,单位（分）
     NSString *order_price   = _order_price;//分
 
-
     //================================
     //预付单参数订单设置
     //================================
@@ -165,11 +155,8 @@
     
     [packageParams setObject: appid             forKey:@"appid"];       //开放平台appid
     [packageParams setObject: mchid             forKey:@"mch_id"];      //商户号
-    
     [packageParams setObject: @"iOS_App"        forKey:@"device_info"]; //支付设备号或门店号//keweikong
-    
     [packageParams setObject: noncestr          forKey:@"nonce_str"];   //随机串
-    
     [packageParams setObject: @"APP"            forKey:@"trade_type"];  //支付类型，固定为APP
     [packageParams setObject: order_name        forKey:@"body"];        //订单描述，展示给用户
     [packageParams setObject: _notify_url        forKey:@"notify_url"];  //支付结果异步通知
@@ -181,9 +168,8 @@
     NSString *prePayid;
     prePayid            = [self sendPrepay:packageParams];
     
-    if ( prePayid != nil) {
+    if (prePayid != nil) {
         //获取到prepayid后进行第二次签名
-        
         NSString    *package, *time_stamp, *nonce_str;
         //设置支付参数
         time_t now;
@@ -207,13 +193,11 @@
         [signParams setObject: sign         forKey:@"sign"];
         
         [debugInfo appendFormat:@"第二步签名成功，sign＝%@\n",sign];
-        
         //返回参数列表
         return signParams;
         
     }else{
         [debugInfo appendFormat:@"获取prepayid失败！\n"];
-        NSLog(@"%@",debugInfo);
         error = @"调起微信支付失败，请重试";
     }
     return nil;

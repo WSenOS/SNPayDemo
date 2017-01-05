@@ -23,22 +23,34 @@ typedef void(^SNAlipayResultsBlock) (NSError * error);
 typedef void(^SNWechatResultsBlock) (NSError * error);
 
 @interface SNPayManager : NSObject <WXApiDelegate>
-//回调url 支付宝 微信
+#pragma mark - 服务器签名 微信调起支付参数
+//服务器签名 微信调起支付参数
+@property (nonatomic, copy) NSString * wxPartnerId;//商户号
+@property (nonatomic, copy) NSString * wxPrepayId;//预支付id
+@property (nonatomic, copy) NSString * wxNonceStr;//随机字符串
+@property (nonatomic, copy) NSString * wxTimeStamp;//时间戳
+@property (nonatomic, copy) NSString * wxSign;//签名
+#pragma mark - 支付宝参数 微信参数(本地签名)
+//回调url 支付宝 微信(本地签名)
 @property (nonatomic, copy) NSString * notify_url;
-//订单标题，展示给用户 支付宝 微信
+//订单标题，展示给用户 支付宝 微信(本地签名)
 @property (nonatomic, copy) NSString * order_name;
-//订单金额 支付宝 微信
+//订单金额 支付宝 微信(本地签名)
 @property (nonatomic, copy) NSString * order_price;
-//订单号 订单id 支付宝 微信
+//订单号 订单id 支付宝 微信(本地签名)
 @property (nonatomic, copy) NSString * order_no;
 //商品描述 支付宝
 @property (nonatomic, copy) NSString * order_description;
 
 
-/*
- * 是否使用通知回调提示支付结果  默认不适用 NO
+/**
+ 是否使用通知回调提示支付结果  默认不使用 NO
  */
 @property (nonatomic, assign) BOOL useNotication;
+/**
+ 获取设备ip
+ */
+@property (nonatomic, copy, readonly) NSString * deviceIp;
 
 + (instancetype)sharePayManager;
 
@@ -52,15 +64,21 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
                          seller:(NSString *)seller
                       appScheme:(NSString *)appScheme
                      privateKey:(NSString *)private_key;
-/** 注册微信
- * @param AppID 创建应用AppID
- * @param partnerID api密钥 登陆商户号 自己生成上传
+/** 注册微信 全部由app生成支付
+ * @param appID 创建应用AppID
+ * @param secretKey api密钥 登陆商户号 自己生成上传
  * @param shopID 支付能力申请返回的商户号
  */
-- (void)registerWechatAppID:(NSString *)AppID
-                  partnerID:(NSString *)partnerID
+- (void)registerWechatAppID:(NSString *)appID
+                  secretKey:(NSString *)secretKey
                      shopID:(NSString *)shopID;
 
+/**
+ 注册微信 服务器统一下单
+
+ @param appID 应用appID
+ */
+- (void)registerWechatAppID:(NSString *)appID;
 
 @end
 
@@ -68,7 +86,6 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
 @interface SNPayManager(sn_alipayPay)
 //回调设置
 - (void)sn_alipayHandleOpenURL:(NSURL *)url;
-
 //调起支付
 - (void)sn_openTheAlipayPay:(SNAlipayResultsBlock)alipayResultsBlock;
 @end
@@ -77,11 +94,11 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
 @interface SNPayManager(sn_wechatPay)
 //回调设置
 - (void)sn_wechatHandleOpenURL:(NSURL *)url;
-
 //调起支付
 #pragma 本地签名调起支付
 - (void)sn_openTheWechatPay:(SNWechatResultsBlock)wechatResultsBlock;
 #pragma 建议服务器签名调起支付
+- (void)sn_openTheWechatWithServicePay:(SNWechatResultsBlock)wechatResultsBlock;
 
 @end
 
