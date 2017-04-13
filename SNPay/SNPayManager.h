@@ -11,7 +11,7 @@
 #import <AlipaySDK/AlipaySDK.h>
 #import "WXApi.h"
 #import "payRequsestHandler.h"
-#import "DataSigner.h"
+#import "RSADataSigner.h"
 #import "Order.h"
 
 //使用通知回调
@@ -58,7 +58,7 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
  * @param partner 支付宝PID
  * @param seller 支付宝账号
  * @param appScheme 应用注册scheme,在AlixPayDemo-Info.plist定义URL types
- * @param private_key 私钥
+ * @param private_key 私钥 服务器签名可为空
  */
 - (void)registerAlipayPatenerID:(NSString *)partner
                          seller:(NSString *)seller
@@ -87,7 +87,11 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
 //回调设置
 - (void)sn_alipayHandleOpenURL:(NSURL *)url;
 //调起支付
+#pragma 本地签名调起支付
 - (void)sn_openTheAlipayPay:(SNAlipayResultsBlock)alipayResultsBlock;
+#pragma 建议服务器签名调起支付
+- (void)sn_openTheAlipayOrderString:(NSString *)orderString WithServicePay:(SNAlipayResultsBlock)alipayResultsBlock;
+
 @end
 
 #pragma mark - Wechat

@@ -7,7 +7,6 @@
 //
 
 #import "SNPayManager.h"
-
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <ifaddrs.h>
@@ -107,6 +106,7 @@ static SNPayManager * _manager = nil;
 
 #pragma mark - 支付宝
 @implementation SNPayManager(sn_alipayPay)
+
 - (void)sn_openTheAlipayPay:(SNAlipayResultsBlock)alipayResultsBlock {
     if (!_useNotication) {
         _alipayResultsBlock = [alipayResultsBlock copy];
@@ -115,40 +115,63 @@ static SNPayManager * _manager = nil;
      *生成订单信息及签名
      */
     //将商品信息赋予AlixPayOrder的成员变量
-    Order *order = [[Order alloc] init];
-    order.partner = _alipay_partnerID;
-    order.sellerID = _alipay_seller;
-    order.outTradeNO = _order_no; //订单ID（由商家自行制定）
-    order.subject = _order_name; //商品标题
+    Order* order = [[Order alloc] init];
     
-    order.body = _order_description; //商品描述
-    order.totalFee = [NSString stringWithFormat:@"%.2f",[_order_price floatValue]]; //商品价格
-    order.notifyURL = _notify_url; //回调URL
+    // NOTE: app_id设置
+    order.app_id = _alipay_partnerID;
     
-    order.service = @"mobile.securitypay.pay";
-    order.paymentType = @"1";
-    order.inputCharset = @"utf-8";
-    order.itBPay = @"30m";
-    order.showURL = @"m.alipay.com";
-
-    //应用注册scheme,在AlixPayDemo-Info.plist定义URL types
-    NSString *appScheme = _alipay_appScheme;
+    // NOTE: 支付接口名称
+    order.method = @"alipay.trade.app.pay";
+    
+    // NOTE: 参数编码格式
+    order.charset = @"utf-8";
+    
+    // NOTE: 当前时间点
+    NSDateFormatter* formatter = [NSDateFormatter new];
+    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    order.timestamp = [formatter stringFromDate:[NSDate date]];
+    
+    // NOTE: 支付版本
+    order.version = @"1.0";
+    
+    // NOTE: sign_type 根据商户设置的私钥来决定
+    order.sign_type = @"RSA";//RSA RSA2 暂用RSA
+    
+    // NOTE: 商品数据
+    order.biz_content = [[BizContent alloc] init];
+    order.biz_content.body = _order_description;
+    order.biz_content.subject = _order_name; //商品标题;
+    order.biz_content.out_trade_no = _order_no; //订单ID（由商家自行制定）
+    order.biz_content.timeout_express = @"30m"; //超时时间设置
+    order.biz_content.total_amount = [NSString stringWithFormat:@"%.2f",[_order_price floatValue]]; //商品价格
     
     //将商品信息拼接成字符串
-    NSString *orderSpec = [order description];
-    NSLog(@"orderSpec = %@",orderSpec);
+    NSString *orderInfo = [order orderInfoEncoded:NO];
+    NSString *orderInfoEncoded = [order orderInfoEncoded:YES];
+    NSLog(@"orderSpec = %@",orderInfo);
     
-    //获取私钥并将商户信息签名,外部商户可以根据情况存放私钥和签名,只需要遵循RSA签名规范,并将签名字符串base64编码和UrlEncode
-    id<DataSigner> signer = CreateRSADataSigner(_alipay_privateKey);
-    NSString *signedString = [signer signString:orderSpec];
+    // NOTE: 获取私钥并将商户信息签名，外部商户的加签过程请务必放在服务端，防止公私钥数据泄露；
+    //       需要遵循RSA签名规范，并将签名字符串base64编码和UrlEncode
+    NSString *signedString = nil;
     
-    //将签名成功字符串格式化为订单字符串,请严格按照该格式
-    NSString *orderString = nil;
+    //RSA RSA2 暂用RSA
+    RSADataSigner* signer = [[RSADataSigner alloc] initWithPrivateKey:_alipay_privateKey];
+    
+    //RSA RSA2 暂用RSA
+//    signedString = [signer signString:orderInfo withRSA2:YES];
+    signedString = [signer signString:orderInfo withRSA2:NO];
+    
+    // NOTE: 如果加签成功，则继续执行支付
     if (signedString != nil) {
-        orderString = [NSString stringWithFormat:@"%@&sign=\"%@\"&sign_type=\"%@\"",
-                       orderSpec, signedString, @"RSA"];
+        //应用注册scheme,在AliSDKDemo-Info.plist定义URL types
+        NSString *appScheme = _alipay_appScheme;
         
+        // NOTE: 将签名成功字符串格式化为订单字符串,请严格按照该格式
+        NSString *orderString = [NSString stringWithFormat:@"%@&sign=%@",
+                                 orderInfoEncoded, signedString];
+        // NOTE: 调用支付结果开始支付
         [[AlipaySDK defaultService] payOrder:orderString fromScheme:appScheme callback:^(NSDictionary *resultDic) {
+            NSLog(@"callback ===>> %@",resultDic);
             NSLog(@"callback ===>> %@",resultDic);
             if ([resultDic[@"resultStatus"] integerValue] == 9000) {
                 if (_useNotication) {
@@ -180,6 +203,43 @@ static SNPayManager * _manager = nil;
     }
 }
 
+- (void)sn_openTheAlipayOrderString:(NSString *)orderString WithServicePay:(SNAlipayResultsBlock)alipayResultsBlock {
+    if (!_useNotication) {
+        _alipayResultsBlock = [alipayResultsBlock copy];
+    }
+    if (orderString != nil) {
+                // NOTE: 调用支付结果开始支付
+        [[AlipaySDK defaultService] payOrder:orderString fromScheme:_alipay_appScheme callback:^(NSDictionary *resultDic) {
+            NSLog(@"callback ===>> %@",resultDic);
+            if ([resultDic[@"resultStatus"] integerValue] == 9000) {
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPaySuccess object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock(nil);
+                    }
+                }
+            } else {
+                if (_useNotication) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+                } else {
+                    if (_alipayResultsBlock) {
+                        _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:resultDic[@"memo"]}]);
+                        
+                    }
+                }
+            }
+        }];
+    } else {
+        if (_useNotication) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:SNPayFailure object:self];
+        } else {
+            if (_alipayResultsBlock) {
+                _alipayResultsBlock([NSError errorWithDomain:Domain code:1 userInfo:@{NSLocalizedDescriptionKey:@"调起支付宝失败，请重试"}]);
+            }
+        }
+    }
+}
 
 - (void)sn_alipayHandleOpenURL:(NSURL *)url {
     //如果极简开发包不可用，会跳转支付宝钱包进行支付，需要将支付宝钱包的支付结果回传给开发包
