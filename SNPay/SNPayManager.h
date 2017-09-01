@@ -64,6 +64,12 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
                          seller:(NSString *)seller
                       appScheme:(NSString *)appScheme
                      privateKey:(NSString *)private_key;
+/**
+ 注册支付宝 服务器统一下单
+ @param appScheme 应用注册scheme,在AlixPayDemo-Info.plist定义URL types
+ */
+- (void)registerAlipayAppScheme:(NSString *)appScheme;
+
 /** 注册微信 全部由app生成支付
  * @param appID 创建应用AppID
  * @param secretKey api密钥 登陆商户号 自己生成上传
@@ -72,10 +78,8 @@ typedef void(^SNWechatResultsBlock) (NSError * error);
 - (void)registerWechatAppID:(NSString *)appID
                   secretKey:(NSString *)secretKey
                      shopID:(NSString *)shopID;
-
 /**
  注册微信 服务器统一下单
-
  @param appID 应用appID
  */
 - (void)registerWechatAppID:(NSString *)appID;

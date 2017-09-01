@@ -57,6 +57,10 @@ static SNPayManager * _manager = nil;
 
 }
 
+- (void)registerAlipayAppScheme:(NSString *)appScheme {
+    _alipay_appScheme = appScheme;
+}
+
 - (void)registerWechatAppID:(NSString *)appID
                   secretKey:(NSString *)secretKey
                      shopID:(NSString *)shopID {
