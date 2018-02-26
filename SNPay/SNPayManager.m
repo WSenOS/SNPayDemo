@@ -119,7 +119,7 @@ static SNPayManager * _manager = nil;
      *生成订单信息及签名
      */
     //将商品信息赋予AlixPayOrder的成员变量
-    Order* order = [[Order alloc] init];
+    APOrderInfo* order = [[APOrderInfo alloc] init];
     
     // NOTE: app_id设置
     order.app_id = _alipay_partnerID;
@@ -142,7 +142,7 @@ static SNPayManager * _manager = nil;
     order.sign_type = @"RSA";//RSA RSA2 暂用RSA
     
     // NOTE: 商品数据
-    order.biz_content = [[BizContent alloc] init];
+    order.biz_content = [[APBizContent alloc] init];
     order.biz_content.body = _order_description;
     order.biz_content.subject = _order_name; //商品标题;
     order.biz_content.out_trade_no = _order_no; //订单ID（由商家自行制定）

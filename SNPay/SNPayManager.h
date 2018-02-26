@@ -12,7 +12,7 @@
 #import "WXApi.h"
 #import "payRequsestHandler.h"
 #import "RSADataSigner.h"
-#import "Order.h"
+#import "APOrderInfo.h"
 
 //使用通知回调
 extern NSString * const SNPaySuccess;
